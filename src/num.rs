@@ -51,4 +51,12 @@ impl Number {
         
         Ok(())
     }
+
+    pub fn assert_valid(&self) -> Result<(), Box<dyn Error>> {
+        if self.value > 32775 {
+            return Err(format!("{} is not valid", self.value).into());
+        }
+        
+        Ok(())
+    }
 }
