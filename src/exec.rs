@@ -2,21 +2,38 @@ use std::{error::Error, fs::read};
 
 use crate::mem::Memory;
 use crate::num::Number;
-use crate::instr::INSTRUCTION;
+use crate::inst::INSTRUCTION;
 
-pub struct Executable<'a> {
+pub struct Executable {
     data: Vec<Number>,
     ptr: usize,
-    stop: bool,
-    memory: &'a mut Memory,
+    running: bool,
 }
 
-impl<'a> Executable<'a> {
-    pub fn new(path: &str, memory: &'a mut Memory) -> Result<Self, Box<dyn Error>> {
+impl Executable {
+    pub fn new(path: &str) -> Result<Self, Box<dyn Error>> {
         let raw = read(path)?;
         let data = Number::from_hex_slice(&raw)?;
 
-        Ok(Self { data, ptr: 0, stop: false, memory })
+        Ok(Self { data, ptr: 0, running: true })
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.running
+    }
+
+    pub fn stop(&mut self) {
+        self.running = false;
+    }
+
+    pub fn jump_to(&mut self, address: u16) -> Result<(), Box<dyn Error>> {
+        if address as usize >= self.data.len() {
+            return Err(format!("Attempt to read out of the executable code.").into());
+        }
+
+        self.ptr = address as usize;
+
+        Ok(())
     }
 
     fn next_number(&mut self) -> Result<Number, Box<dyn Error>> {
@@ -45,18 +62,8 @@ impl<'a> Executable<'a> {
         Ok((a, b, c))
     }
 
-    pub fn exec(&mut self) -> Result<(), Box<dyn Error>> {
-        while !self.stop {
-            let instruction = self.next_instruction()?;
-            self.exec_instruction(instruction)?;
-        };
-
-        Ok(())
-    }
-
-    fn next_instruction(&mut self) -> Result<INSTRUCTION, Box<dyn Error>> {
-        let number = self.next_number()?;
-        let instruction = match self.memory.value_of(&number)? {
+    pub fn next_instruction(&mut self) -> Result<INSTRUCTION, Box<dyn Error>> {
+        let instruction = match self.next_number()?.value() {
             0 => INSTRUCTION::HALT,
             1 => {
                 let (a, b) = self.next_two_numbers()?;
@@ -86,38 +93,5 @@ impl<'a> Executable<'a> {
         };
 
         Ok(instruction)
-    }
-
-    fn exec_instruction(&mut self, instruction: INSTRUCTION) -> Result<(), Box<dyn Error>> {
-        match instruction {
-            INSTRUCTION::HALT => {
-                self.stop = true;
-            },
-            INSTRUCTION::SET(a, b) => {
-                let idx = a.value() as usize;
-                let value = self.memory.value_of(&b)?;
-                self.memory.write_register(idx, value)?;
-            }
-            INSTRUCTION::JMP(a) => {
-                self.ptr = self.memory.value_of(&a)? as usize;
-            },
-            INSTRUCTION::JT(a, b) => {
-                if self.memory.value_of(&a)? != 0 {
-                    self.ptr = self.memory.value_of(&b)? as usize;
-                }
-            },
-            INSTRUCTION::JF(a, b) => {
-                if self.memory.value_of(&a)? == 0 {
-                    self.ptr = self.memory.value_of(&b)? as usize;
-                }
-            },
-            INSTRUCTION::OUT(a) => {
-                print!("{}", self.memory.value_of(&a)? as u8 as char);
-            },
-            INSTRUCTION::NOOP => {},
-            _ => {},
-        }
-
-        Ok(())
     }
 }

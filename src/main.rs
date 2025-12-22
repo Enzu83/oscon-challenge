@@ -1,9 +1,10 @@
 mod exec;
-mod instr;
+mod inst;
 mod mem;
 mod num;
+mod vm;
 
-use crate::{exec::Executable, mem::Memory};
+use crate::{exec::Executable, mem::Memory, vm::VM};
 use std::{env, error::Error, process::exit};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -21,9 +22,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         },
     };
 
-    let mut memory = Memory::new();
-    let mut executable = Executable::new(&path, &mut memory)?;
-    executable.exec()?;
-
-    Ok(())
+    let mut vm = VM::new();
+    vm.run(&path)
 }

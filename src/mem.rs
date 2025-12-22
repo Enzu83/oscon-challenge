@@ -41,16 +41,4 @@ impl Memory {
             None => Err(format!("Stack is empty, cannot pop values out").into()),
         }
     }
-
-    pub fn value_of(&self, number: &Number) -> Result<u16, Box<dyn Error>> {
-        if number.is_literal() {
-            return Ok(number.value());
-        }
-
-        if number.is_valid() {
-            return self.read_register(number.value() as usize);
-        }
-
-        Err(format!("Can't get value of {:?}", number).into())
-    }
 }
