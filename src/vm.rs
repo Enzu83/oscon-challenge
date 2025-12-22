@@ -31,24 +31,24 @@ impl VM {
                 self.memory.push_stack(value);
             },
             INSTRUCTION::POP(a) => {
-                let idx = a.raw_value() as usize;
+                let idx = a.raw_value();
                 let value = self.memory.pop_stack()?;
-                self.memory.write_register(idx, value)?;
+                self.memory.write(idx, value)?;
             },
             INSTRUCTION::SET(a, b) => {
-                let idx = a.raw_value() as usize;
+                let idx = a.raw_value();
                 let value = b.value(&self.memory)?;
-                self.memory.write_register(idx, value)?;
+                self.memory.write(idx, value)?;
             },
             INSTRUCTION::EQ(a, b, c) => {
-                let idx = a.raw_value() as usize;
+                let idx = a.raw_value();
                 let value = (b.value(&self.memory)? == c.value(&self.memory)?) as u16;
-                self.memory.write_register(idx, value)?;
+                self.memory.write(idx, value)?;
             },
             INSTRUCTION::GT(a, b, c) => {
-                let idx = a.raw_value() as usize;
+                let idx = a.raw_value();
                 let value = (b.value(&self.memory)? > c.value(&self.memory)?) as u16;
-                self.memory.write_register(idx, value)?;
+                self.memory.write(idx, value)?;
             },
             INSTRUCTION::JMP(a) => {
                 executable.jump_to(a.raw_value())?;
@@ -64,27 +64,44 @@ impl VM {
                 }
             },
             INSTRUCTION::ADD(a, b, c) => {
-                let idx = a.raw_value() as usize;
+                let idx = a.raw_value();
                 let value = (b.value(&self.memory)? + c.value(&self.memory)?) % 32768;
-                self.memory.write_register(idx, value)?;
+                self.memory.write(idx, value)?;
+            },
+            INSTRUCTION::MULT(a, b, c) => {
+                let idx = a.raw_value();
+                let value = (b.value(&self.memory)? as u32 * c.value(&self.memory)? as u32) as u16 % 32768;
+                self.memory.write(idx, value)?;
+            },
+            INSTRUCTION::MOD(a, b, c) => {
+                let idx = a.raw_value();
+                let value = b.value(&self.memory)? % c.value(&self.memory)?;
+                self.memory.write(idx, value)?;
             },
             INSTRUCTION::AND(a, b, c) => {
-                let idx = a.raw_value() as usize;
+                let idx = a.raw_value();
                 let value = b.value(&self.memory)? & c.value(&self.memory)?;
-                self.memory.write_register(idx, value)?;
+                self.memory.write(idx, value)?;
             },
             INSTRUCTION::OR(a, b, c) => {
-                let idx = a.raw_value() as usize;
+                let idx = a.raw_value();
                 let value = b.value(&self.memory)? | c.value(&self.memory)?;
-                self.memory.write_register(idx, value)?;
+                self.memory.write(idx, value)?;
             },
             INSTRUCTION::NOT(a, b) => {
-                let idx = a.raw_value() as usize;
+                let idx = a.raw_value();
                 let value = (!b.value(&self.memory)? << 1) >> 1;
-                self.memory.write_register(idx, value)?;
+                self.memory.write(idx, value)?;
+            },
+            INSTRUCTION::RMEM(a, b) => {
+                let b_idx = b.raw_value();
+                let value = self.memory.read(b_idx)?;
+                
+                let idx = a.raw_value();
+                self.memory.write(idx, value)?;
             },
             INSTRUCTION::CALL(a) => {
-                let next_inst_addr = executable.current_address() as u16;
+                let next_inst_addr = executable.current_address();
                 self.memory.push_stack(next_inst_addr);
                 executable.jump_to(a.value(&self.memory)?)?;
             },

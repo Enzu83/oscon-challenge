@@ -60,7 +60,7 @@ impl Number {
     pub fn value(&self, memory: &Memory) -> Result<u16, Box<dyn Error>> {
         match Number::kind_of(self.value)? {
             NumType::LITERAL => Ok(self.raw_value()),
-            NumType::REGISTER => memory.read_register(self.raw_value() as usize),
+            NumType::REGISTER => memory.read_register(self.raw_value()),
         }
     }
 

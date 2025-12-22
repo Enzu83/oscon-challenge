@@ -35,8 +35,8 @@ impl Executable {
         Ok(())
     }
 
-    pub fn current_address(&self) -> usize {
-        self.ptr
+    pub fn current_address(&self) -> u16 {
+        self.ptr as u16
     }
 
     pub fn next(&mut self) -> Result<Number, Box<dyn Error>> {
@@ -66,9 +66,11 @@ impl Executable {
     }
 
     pub fn next_instruction(&mut self) -> Result<INSTRUCTION, Box<dyn Error>> {
-        let prev_ptr = self.ptr;
+        //let prev_ptr = self.ptr;
+        let instr = self.next()?.raw_value();
+        //println!("({:02}) {:?}", prev_ptr, instr);
 
-        let instruction = match self.next()?.raw_value() {
+        let instruction = match instr {
             0 => INSTRUCTION::HALT,
             1 => {
                 let (a, b) = self.next_two()?;
@@ -112,6 +114,16 @@ impl Executable {
                 a.assert_register()?;
                 INSTRUCTION::ADD(a, b, c)
             },
+            10 => {
+                let (a, b, c) = self.next_three()?;
+                a.assert_register()?;
+                INSTRUCTION::MULT(a, b, c)
+            },
+            11 => {
+                let (a, b, c) = self.next_three()?;
+                a.assert_register()?;
+                INSTRUCTION::MOD(a, b, c)
+            },
             12 => {
                 let (a, b, c) = self.next_three()?;
                 a.assert_register()?;
@@ -127,6 +139,11 @@ impl Executable {
                 a.assert_register()?;
                 INSTRUCTION::NOT(a, b)
             },
+            15 => {
+                let (a, b) = self.next_two()?;
+                a.assert_register()?;
+                INSTRUCTION::RMEM(a, b)
+            },
             17 => {
                 let a = self.next()?;
                 INSTRUCTION::CALL(a)
@@ -141,7 +158,7 @@ impl Executable {
             },
         };
 
-        //println!("{}: {:?}", prev_ptr, instruction);
+        //println!("{:?}\n", instruction);
 
         Ok(instruction)
     }
