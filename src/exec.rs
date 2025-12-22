@@ -1,7 +1,7 @@
 use std::process::exit;
 use std::{error::Error, fs::read};
 
-use crate::number::from_hex_slice;
+use crate::num::from_hex_slice;
 use crate::instr::INSTRUCTION;
 
 pub struct Executable {
@@ -17,13 +17,30 @@ impl Executable {
         Ok(Self { data, ptr: 0 })
     }
 
-    pub fn next_number(&mut self) -> Result<u16, Box<dyn Error>> {
+    fn next_number(&mut self) -> Result<u16, Box<dyn Error>> {
+        let number = self.data.get(self.ptr);
+
         self.ptr += 1;
 
-        match self.data.get(self.ptr)  {
+        match number {
             Some(value) => Ok(*value),
             None => Err(format!("Attempt to read out of the executable code.").into()),
         }
+    }
+
+    fn next_two_numbers(&mut self) -> Result<(u16, u16), Box<dyn Error>> {
+        let a = self.next_number()?;
+        let b = self.next_number()?;
+
+        Ok((a, b))
+    }
+
+    fn next_three_numbers(&mut self) -> Result<(u16, u16, u16), Box<dyn Error>> {
+        let a = self.next_number()?;
+        let b = self.next_number()?;
+        let c = self.next_number()?;
+
+        Ok((a, b, c))
     }
 
     pub fn exec(&mut self) -> Result<(), Box<dyn Error>> {
@@ -36,12 +53,16 @@ impl Executable {
     fn next_instruction(&mut self) -> Result<INSTRUCTION, Box<dyn Error>> {
         let instruction = match self.next_number()? {
             0 => INSTRUCTION::HALT,
+            6 => {
+                let a = self.next_number()?;
+                INSTRUCTION::JMP(a)
+            }
             19 => {
                 let a = self.next_number()?;
                 INSTRUCTION::OUT(a)
             },
             21 => INSTRUCTION::NOOP,
-            opcode => return Err(format!("Opcode {} not implemented yet.", opcode).into()),
+            opcode => return Err(format!("Invalid opcode {}", opcode).into()),
         };
 
         Ok(instruction)
@@ -52,6 +73,9 @@ impl Executable {
             INSTRUCTION::HALT => {
                 exit(0);
             },
+            INSTRUCTION::JMP(a) => {
+                self.ptr = a as usize;
+            }
             INSTRUCTION::OUT(a) => {
                 print!("{}", a as u8 as char);
             },

@@ -25,3 +25,5 @@ pub fn from_hex(raw: &[u8]) -> Result<u16, Box<dyn Error>> {
 
     Ok(value)
 }
+
+

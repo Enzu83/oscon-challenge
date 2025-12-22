@@ -1,7 +1,7 @@
 mod exec;
 mod instr;
 mod mem;
-mod number;
+mod num;
 
 use crate::exec::Executable;
 use std::{env, error::Error, process::exit};
