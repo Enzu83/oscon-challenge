@@ -9,6 +9,7 @@ pub enum INSTRUCTION {
     GT(Number, Number, Number),
     JMP(Number),
     JT(Number, Number),
+    JF(Number, Number),
     ADD(Number, Number, Number),
     MULT(Number, Number, Number),
     MOD(Number, Number, Number),

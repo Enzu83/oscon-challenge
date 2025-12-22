@@ -1,4 +1,3 @@
-use std::process::exit;
 use std::{error::Error, fs::read};
 
 use crate::num::Number;
@@ -7,6 +6,7 @@ use crate::instr::INSTRUCTION;
 pub struct Executable {
     data: Vec<Number>,
     ptr: usize,
+    stop: bool,
 }
 
 impl Executable {
@@ -14,7 +14,7 @@ impl Executable {
         let raw = read(path)?;
         let data = Number::from_hex_slice(&raw)?;
 
-        Ok(Self { data, ptr: 0 })
+        Ok(Self { data, ptr: 0, stop: false })
     }
 
     fn next_number(&mut self) -> Result<Number, Box<dyn Error>> {
@@ -44,10 +44,12 @@ impl Executable {
     }
 
     pub fn exec(&mut self) -> Result<(), Box<dyn Error>> {
-        loop {
+        while !self.stop {
             let instruction = self.next_instruction()?;
             self.exec_instruction(instruction)?;
-        }
+        };
+
+        Ok(())
     }
 
     fn next_instruction(&mut self) -> Result<INSTRUCTION, Box<dyn Error>> {
@@ -60,7 +62,11 @@ impl Executable {
             7 => {
                 let (a, b) = self.next_two_numbers()?;
                 INSTRUCTION::JT(a, b)
-            }
+            },
+            8 => {
+                let (a, b) = self.next_two_numbers()?;
+                INSTRUCTION::JF(a, b)
+            },
             19 => {
                 let a = self.next_number()?;
                 INSTRUCTION::OUT(a)
@@ -75,7 +81,7 @@ impl Executable {
     fn exec_instruction(&mut self, instruction: INSTRUCTION) -> Result<(), Box<dyn Error>> {
         match instruction {
             INSTRUCTION::HALT => {
-                exit(0);
+                self.stop = true;
             },
             INSTRUCTION::JMP(a) => {
                 self.ptr = a.value() as usize;
@@ -84,7 +90,12 @@ impl Executable {
                 if a.value() != 0 {
                     self.ptr = b.value() as usize;
                 }
-            }
+            },
+            INSTRUCTION::JF(a, b) => {
+                if a.value() == 0 {
+                    self.ptr = b.value() as usize;
+                }
+            },
             INSTRUCTION::OUT(a) => {
                 print!("{}", a.value() as u8 as char);
             },
