@@ -4,7 +4,7 @@ mod mem;
 mod num;
 mod vm;
 
-use crate::{exec::Executable, mem::Memory, vm::VM};
+use crate::vm::VM;
 use std::{env, error::Error, process::exit};
 
 fn main() -> Result<(), Box<dyn Error>> {

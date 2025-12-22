@@ -1,7 +1,5 @@
 use std::error::Error;
 
-use crate::num::Number;
-
 pub struct Memory {
     registers: [u16; 8],
     stack: Vec<u16>,

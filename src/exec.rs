@@ -1,6 +1,5 @@
 use std::{error::Error, fs::read};
 
-use crate::mem::Memory;
 use crate::num::Number;
 use crate::inst::INSTRUCTION;
 
@@ -63,11 +62,12 @@ impl Executable {
     }
 
     pub fn next_instruction(&mut self) -> Result<INSTRUCTION, Box<dyn Error>> {
-        let instruction = match self.next_number()?.value() {
+        let instruction = match self.next_number()?.raw_value() {
             0 => INSTRUCTION::HALT,
             1 => {
                 let (a, b) = self.next_two_numbers()?;
                 a.assert_register()?;
+                b.assert_literal()?;
                 INSTRUCTION::SET(a, b)
             }
             6 => {

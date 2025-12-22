@@ -1,8 +1,18 @@
 use std::error::Error;
 
+use crate::mem::Memory;
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NumType {
+    LITERAL,
+    REGISTER,
+}
+
 #[derive(Debug, Clone)]
 pub struct Number {
     value: u16,
+    kind: NumType,
 }
 
 impl Number {
@@ -15,7 +25,6 @@ impl Number {
 
         for i in 0..raw.len() / 2 {
             let num = Number::from_hex(&raw[2*i..2*i+2])?;
-            num.assert_valid()?;
             num_slice.push(num);
         }
 
@@ -28,48 +37,50 @@ impl Number {
         }
 
         let hex = format!("{:02X}{:02X}", raw[1], raw[0]);
-        let value = u16::from_str_radix(&hex, 16)?;
+        let value = u16::from_str_radix(&hex, 16)?;        
+        let kind = Number::kind_of(value)?;
 
-        Ok(Self { value })
+        Ok(Self { value, kind })
     }
 
-    pub fn value(&self) -> u16 {
+    pub fn kind_of(value: u16) -> Result<NumType, Box<dyn Error>> {
+        if value <= 32767 {
+            return Ok(NumType::LITERAL);
+        }
+
+        if value >= 32768 && value <= 32775 {
+            return Ok(NumType::REGISTER);
+        }
+
+        return Err(format!("Value {} is invalid", value).into());
+    }
+
+    pub fn raw_value(&self) -> u16 {
         self.value
     }
 
-    pub fn is_literal(&self) -> bool {
-        self.value <= 32767
+    pub fn value(&self, mem: &Memory) -> u16 {
+        match self.kind {
+            NumType::LITERAL => self.raw_value(),
+            NumType::REGISTER => mem.read_register(self.raw_value() as usize).unwrap(),
+        }
     }
 
-    pub fn is_register(&self) -> bool {
-        self.value >= 32768 && self.value <= 32775
-    }
-
-    pub fn is_valid(&self) -> bool {
-        self.is_literal() || self.is_register()
+    pub fn kind(&self) -> &NumType {
+        &self.kind
     }
 
     pub fn assert_literal(&self) -> Result<(), Box<dyn Error>> {
-        if !self.is_literal() {
-            return Err(format!("{} is not a literal value", self.value).into());
+        if *self.kind() == NumType::LITERAL {
+            return Ok(());
         }
-
-        Ok(())
+        return Err(format!("{} is not a literal value", self.value).into());
     }
 
     pub fn assert_register(&self) -> Result<(), Box<dyn Error>> {
-        if !self.is_register() {
-            return Err(format!("{} is not a register", self.value).into());
+        if *self.kind() == NumType::REGISTER {
+            return Ok(());
         }
-        
-        Ok(())
-    }
-
-    pub fn assert_valid(&self) -> Result<(), Box<dyn Error>> {
-        if !self.is_valid() {
-            return Err(format!("{} is not valid", self.value).into());
-        }
-        
-        Ok(())
+        return Err(format!("{} is not a register", self.value).into());
     }
 }

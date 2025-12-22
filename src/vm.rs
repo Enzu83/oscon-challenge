@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::{exec::Executable, inst::INSTRUCTION, mem::Memory, num::Number};
+use crate::{exec::Executable, inst::INSTRUCTION, mem::Memory};
 
 pub struct VM {
     memory: Memory,
@@ -27,42 +27,30 @@ impl VM {
                 executable.stop();
             },
             INSTRUCTION::SET(a, b) => {
-                let idx = a.value() as usize;
-                let value = self.mem_value(&b)?;
+                let idx = a.raw_value() as usize;
+                let value = b.value(&self.memory);
                 self.memory.write_register(idx, value)?;
             }
             INSTRUCTION::JMP(a) => {
-                executable.jump_to(a.value())?;
+                executable.jump_to(a.raw_value())?;
             },
             INSTRUCTION::JT(a, b) => {
-                if self.mem_value(&a)? != 0 {
-                    executable.jump_to(b.value())?;
+                if a.value(&self.memory) != 0 {
+                    executable.jump_to(b.raw_value())?;
                 }
             },
             INSTRUCTION::JF(a, b) => {
-                if self.mem_value(&a)? == 0 {
-                    executable.jump_to(b.value())?;
+                if a.value(&self.memory) == 0 {
+                    executable.jump_to(b.raw_value())?;
                 }
             },
             INSTRUCTION::OUT(a) => {
-                print!("{}", self.mem_value(&a)? as u8 as char);
+                print!("{}", a.raw_value() as u8 as char);
             },
             INSTRUCTION::NOOP => {},
             _ => {},
         }
 
         Ok(())
-    }
-
-    pub fn mem_value(&self, number: &Number) -> Result<u16, Box<dyn Error>> {
-        if number.is_literal() {
-            return Ok(number.value());
-        }
-
-        if number.is_valid() {
-            return self.memory.read_register(number.value() as usize);
-        }
-
-        Err(format!("Can't get value of {:?}", number).into())
     }
 }
