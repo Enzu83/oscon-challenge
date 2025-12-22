@@ -15,6 +15,7 @@ impl Number {
 
         for i in 0..raw.len() / 2 {
             let num = Number::from_hex(&raw[2*i..2*i+2])?;
+            num.assert_valid()?;
             num_slice.push(num);
         }
 
@@ -36,8 +37,20 @@ impl Number {
         self.value
     }
 
+    pub fn is_literal(&self) -> bool {
+        self.value <= 32767
+    }
+
+    pub fn is_register(&self) -> bool {
+        self.value >= 32768 && self.value <= 32775
+    }
+
+    pub fn is_valid(&self) -> bool {
+        self.is_literal() || self.is_register()
+    }
+
     pub fn assert_literal(&self) -> Result<(), Box<dyn Error>> {
-        if self.value > 32767 {
+        if !self.is_literal() {
             return Err(format!("{} is not a literal value", self.value).into());
         }
 
@@ -45,7 +58,7 @@ impl Number {
     }
 
     pub fn assert_register(&self) -> Result<(), Box<dyn Error>> {
-        if self.value <= 32767 || self.value > 32775 {
+        if !self.is_register() {
             return Err(format!("{} is not a register", self.value).into());
         }
         
@@ -53,7 +66,7 @@ impl Number {
     }
 
     pub fn assert_valid(&self) -> Result<(), Box<dyn Error>> {
-        if self.value > 32775 {
+        if !self.is_valid() {
             return Err(format!("{} is not valid", self.value).into());
         }
         
