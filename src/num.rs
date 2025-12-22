@@ -12,7 +12,6 @@ pub enum NumType {
 #[derive(Debug, Clone)]
 pub struct Number {
     value: u16,
-    kind: NumType,
 }
 
 impl Number {
@@ -38,9 +37,8 @@ impl Number {
 
         let hex = format!("{:02X}{:02X}", raw[1], raw[0]);
         let value = u16::from_str_radix(&hex, 16)?;        
-        let kind = Number::kind_of(value)?;
 
-        Ok(Self { value, kind })
+        Ok(Self { value })
     }
 
     pub fn kind_of(value: u16) -> Result<NumType, Box<dyn Error>> {
@@ -59,26 +57,22 @@ impl Number {
         self.value
     }
 
-    pub fn value(&self, memory: &Memory) -> u16 {
-        match self.kind {
-            NumType::LITERAL => self.raw_value(),
-            NumType::REGISTER => memory.read_register(self.raw_value() as usize).unwrap(),
+    pub fn value(&self, memory: &Memory) -> Result<u16, Box<dyn Error>> {
+        match Number::kind_of(self.value)? {
+            NumType::LITERAL => Ok(self.raw_value()),
+            NumType::REGISTER => memory.read_register(self.raw_value() as usize),
         }
     }
 
-    pub fn kind(&self) -> &NumType {
-        &self.kind
-    }
-
     pub fn assert_literal(&self) -> Result<(), Box<dyn Error>> {
-        if *self.kind() == NumType::LITERAL {
+        if Number::kind_of(self.value)? == NumType::LITERAL {
             return Ok(());
         }
         return Err(format!("{} is not a literal value", self.value).into());
     }
 
     pub fn assert_register(&self) -> Result<(), Box<dyn Error>> {
-        if *self.kind() == NumType::REGISTER {
+        if Number::kind_of(self.value)? == NumType::REGISTER {
             return Ok(());
         }
         return Err(format!("{} is not a register", self.value).into());
