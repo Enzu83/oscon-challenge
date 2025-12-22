@@ -26,11 +26,30 @@ impl VM {
             INSTRUCTION::HALT => {
                 executable.stop();
             },
+            INSTRUCTION::PUSH(a) => {
+                let value = a.value(&self.memory);
+                self.memory.push_stack(value);
+            },
+            INSTRUCTION::POP(a) => {
+                let idx = a.raw_value() as usize;
+                let value = self.memory.pop_stack()?;
+                self.memory.write_register(idx, value)?;
+            },
             INSTRUCTION::SET(a, b) => {
                 let idx = a.raw_value() as usize;
                 let value = b.value(&self.memory);
                 self.memory.write_register(idx, value)?;
-            }
+            },
+            INSTRUCTION::EQ(a, b, c) => {
+                let idx = a.raw_value() as usize;
+                let value = (b.value(&self.memory) == c.value(&self.memory)) as u16;
+                self.memory.write_register(idx, value)?;
+            },
+            INSTRUCTION::GT(a, b, c) => {
+                let idx = a.raw_value() as usize;
+                let value = (b.value(&self.memory) > c.value(&self.memory)) as u16;
+                self.memory.write_register(idx, value)?;
+            },
             INSTRUCTION::JMP(a) => {
                 executable.jump_to(a.raw_value())?;
             },
@@ -43,6 +62,26 @@ impl VM {
                 if a.value(&self.memory) == 0 {
                     executable.jump_to(b.raw_value())?;
                 }
+            },
+            INSTRUCTION::ADD(a, b, c) => {
+                let idx = a.raw_value() as usize;
+                let value = b.value(&self.memory) + c.value(&self.memory);
+                self.memory.write_register(idx, value)?;
+            },
+            INSTRUCTION::AND(a, b, c) => {
+                let idx = a.raw_value() as usize;
+                let value = b.value(&self.memory) & c.value(&self.memory);
+                self.memory.write_register(idx, value)?;
+            },
+            INSTRUCTION::OR(a, b, c) => {
+                let idx = a.raw_value() as usize;
+                let value = b.value(&self.memory) | c.value(&self.memory);
+                self.memory.write_register(idx, value)?;
+            },
+            INSTRUCTION::NOT(a, b) => {
+                let idx = a.raw_value() as usize;
+                let value = (!b.value(&self.memory) << 1) >> 1;
+                self.memory.write_register(idx, value)?;
             },
             INSTRUCTION::OUT(a) => {
                 print!("{}", a.raw_value() as u8 as char);

@@ -59,10 +59,10 @@ impl Number {
         self.value
     }
 
-    pub fn value(&self, mem: &Memory) -> u16 {
+    pub fn value(&self, memory: &Memory) -> u16 {
         match self.kind {
             NumType::LITERAL => self.raw_value(),
-            NumType::REGISTER => mem.read_register(self.raw_value() as usize).unwrap(),
+            NumType::REGISTER => memory.read_register(self.raw_value() as usize).unwrap(),
         }
     }
 

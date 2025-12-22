@@ -69,7 +69,26 @@ impl Executable {
                 a.assert_register()?;
                 b.assert_literal()?;
                 INSTRUCTION::SET(a, b)
-            }
+            },
+            2 => {
+                let a = self.next_number()?;
+                INSTRUCTION::PUSH(a)
+            },
+            3 => {
+                let a = self.next_number()?;
+                a.assert_register()?;
+                INSTRUCTION::POP(a)
+            },
+            4 => {
+                let (a, b, c) = self.next_three_numbers()?;
+                a.assert_register()?;
+                INSTRUCTION::EQ(a, b, c)
+            },
+            5 => {
+                let (a, b, c) = self.next_three_numbers()?;
+                a.assert_register()?;
+                INSTRUCTION::GT(a, b, c)
+            },
             6 => {
                 let a = self.next_number()?;
                 INSTRUCTION::JMP(a)
@@ -81,6 +100,26 @@ impl Executable {
             8 => {
                 let (a, b) = self.next_two_numbers()?;
                 INSTRUCTION::JF(a, b)
+            },
+            9 => {
+                let (a, b, c) = self.next_three_numbers()?;
+                a.assert_register()?;
+                INSTRUCTION::ADD(a, b, c)
+            },
+            12 => {
+                let (a, b, c) = self.next_three_numbers()?;
+                a.assert_register()?;
+                INSTRUCTION::AND(a, b, c)
+            },
+            13 => {
+                let (a, b, c) = self.next_three_numbers()?;
+                a.assert_register()?;
+                INSTRUCTION::OR(a, b, c)
+            },
+            14 => {
+                let (a, b) = self.next_two_numbers()?;
+                a.assert_register()?;
+                INSTRUCTION::NOT(a, b)
             },
             19 => {
                 let a = self.next_number()?;
