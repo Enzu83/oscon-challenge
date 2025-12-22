@@ -8,11 +8,11 @@ pub struct Executable<'a> {
     data: Vec<Number>,
     ptr: usize,
     stop: bool,
-    memory: &'a Memory,
+    memory: &'a mut Memory,
 }
 
 impl<'a> Executable<'a> {
-    pub fn new(path: &str, memory: &'a Memory) -> Result<Self, Box<dyn Error>> {
+    pub fn new(path: &str, memory: &'a mut Memory) -> Result<Self, Box<dyn Error>> {
         let raw = read(path)?;
         let data = Number::from_hex_slice(&raw)?;
 
@@ -58,6 +58,11 @@ impl<'a> Executable<'a> {
         let number = self.next_number()?;
         let instruction = match self.memory.value_of(&number)? {
             0 => INSTRUCTION::HALT,
+            1 => {
+                let (a, b) = self.next_two_numbers()?;
+                a.assert_register()?;
+                INSTRUCTION::SET(a, b)
+            }
             6 => {
                 let a = self.next_number()?;
                 INSTRUCTION::JMP(a)
@@ -75,7 +80,9 @@ impl<'a> Executable<'a> {
                 INSTRUCTION::OUT(a)
             },
             21 => INSTRUCTION::NOOP,
-            opcode => return Err(format!("Invalid opcode {}", opcode).into()),
+            opcode => {
+                return Err(format!("Invalid opcode: {}", opcode).into())
+            },
         };
 
         Ok(instruction)
@@ -86,6 +93,11 @@ impl<'a> Executable<'a> {
             INSTRUCTION::HALT => {
                 self.stop = true;
             },
+            INSTRUCTION::SET(a, b) => {
+                let idx = a.value() as usize;
+                let value = self.memory.value_of(&b)?;
+                self.memory.write_register(idx, value)?;
+            }
             INSTRUCTION::JMP(a) => {
                 self.ptr = self.memory.value_of(&a)? as usize;
             },

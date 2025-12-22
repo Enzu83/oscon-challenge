@@ -21,8 +21,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         },
     };
 
-    let memory = Memory::new();
-    let mut executable = Executable::new(&path, &memory)?;
+    let mut memory = Memory::new();
+    let mut executable = Executable::new(&path, &mut memory)?;
     executable.exec()?;
 
     Ok(())
