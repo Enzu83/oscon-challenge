@@ -3,7 +3,7 @@ mod instr;
 mod mem;
 mod num;
 
-use crate::exec::Executable;
+use crate::{exec::Executable, mem::Memory};
 use std::{env, error::Error, process::exit};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -21,8 +21,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         },
     };
 
-    let mut exec = Executable::new(&path)?;
-    exec.exec()?;
+    let memory = Memory::new();
+    let mut executable = Executable::new(&path, &memory)?;
+    executable.exec()?;
 
     Ok(())
 }

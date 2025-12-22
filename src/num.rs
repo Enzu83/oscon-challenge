@@ -1,6 +1,6 @@
 use std::error::Error;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Number {
     value: u16,
 }

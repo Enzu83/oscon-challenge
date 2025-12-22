@@ -1,20 +1,22 @@
 use std::{error::Error, fs::read};
 
+use crate::mem::Memory;
 use crate::num::Number;
 use crate::instr::INSTRUCTION;
 
-pub struct Executable {
+pub struct Executable<'a> {
     data: Vec<Number>,
     ptr: usize,
     stop: bool,
+    memory: &'a Memory,
 }
 
-impl Executable {
-    pub fn new(path: &str) -> Result<Self, Box<dyn Error>> {
+impl<'a> Executable<'a> {
+    pub fn new(path: &str, memory: &'a Memory) -> Result<Self, Box<dyn Error>> {
         let raw = read(path)?;
         let data = Number::from_hex_slice(&raw)?;
 
-        Ok(Self { data, ptr: 0, stop: false })
+        Ok(Self { data, ptr: 0, stop: false, memory })
     }
 
     fn next_number(&mut self) -> Result<Number, Box<dyn Error>> {
@@ -53,7 +55,8 @@ impl Executable {
     }
 
     fn next_instruction(&mut self) -> Result<INSTRUCTION, Box<dyn Error>> {
-        let instruction = match self.next_number()?.value() {
+        let number = self.next_number()?;
+        let instruction = match self.memory.value_of(&number)? {
             0 => INSTRUCTION::HALT,
             6 => {
                 let a = self.next_number()?;
@@ -84,20 +87,20 @@ impl Executable {
                 self.stop = true;
             },
             INSTRUCTION::JMP(a) => {
-                self.ptr = a.value() as usize;
+                self.ptr = self.memory.value_of(&a)? as usize;
             },
             INSTRUCTION::JT(a, b) => {
-                if a.value() != 0 {
-                    self.ptr = b.value() as usize;
+                if self.memory.value_of(&a)? != 0 {
+                    self.ptr = self.memory.value_of(&b)? as usize;
                 }
             },
             INSTRUCTION::JF(a, b) => {
-                if a.value() == 0 {
-                    self.ptr = b.value() as usize;
+                if self.memory.value_of(&a)? == 0 {
+                    self.ptr = self.memory.value_of(&b)? as usize;
                 }
             },
             INSTRUCTION::OUT(a) => {
-                print!("{}", a.value() as u8 as char);
+                print!("{}", self.memory.value_of(&a)? as u8 as char);
             },
             INSTRUCTION::NOOP => {},
             _ => {},
