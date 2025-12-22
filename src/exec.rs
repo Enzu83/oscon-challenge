@@ -27,7 +27,7 @@ impl Executable {
 
     pub fn jump_to(&mut self, address: u16) -> Result<(), Box<dyn Error>> {
         if address as usize >= self.data.len() {
-            return Err(format!("Attempt to read out of the executable code.").into());
+            return Err(format!("Attempt to jump outside of the executable code boundaries ({})", address).into());
         }
 
         self.ptr = address as usize;
@@ -35,22 +35,19 @@ impl Executable {
         Ok(())
     }
 
-    pub fn get_next(&self) -> Result<Number, Box<dyn Error>> {
-        match self.data.get(self.ptr) {
-            Some(num) => Ok(num.clone()),
-            None => Err(format!("Attempt to read out of the executable code.").into()),
-        }
-    }
-
-    pub fn go_to_next(&mut self) {
-        self.ptr +=1;
+    pub fn current_address(&self) -> usize {
+        self.ptr
     }
 
     pub fn next(&mut self) -> Result<Number, Box<dyn Error>> {
-        let number = self.get_next()?;
-        self.go_to_next();
+        let number = match self.data.get(self.ptr) {
+            Some(num) => Ok(num.clone()),
+            None => Err(format!("Attempt to read outside of the executable code boundaries ({})", self.ptr).into()),
+        };
         
-        Ok(number)
+        self.ptr += 1;
+        
+        return number;
     }
 
     fn next_two(&mut self) -> Result<(Number, Number), Box<dyn Error>> {
@@ -69,6 +66,8 @@ impl Executable {
     }
 
     pub fn next_instruction(&mut self) -> Result<INSTRUCTION, Box<dyn Error>> {
+        let prev_ptr = self.ptr;
+
         let instruction = match self.next()?.raw_value() {
             0 => INSTRUCTION::HALT,
             1 => {
@@ -141,6 +140,8 @@ impl Executable {
                 return Err(format!("Invalid opcode: {}", opcode).into())
             },
         };
+
+        //println!("{}: {:?}", prev_ptr, instruction);
 
         Ok(instruction)
     }

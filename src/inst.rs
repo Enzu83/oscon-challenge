@@ -1,5 +1,6 @@
 use crate::num::Number;
 
+#[derive(Debug)]
 pub enum INSTRUCTION {
     HALT,
     SET(Number, Number),

@@ -84,9 +84,9 @@ impl VM {
                 self.memory.write_register(idx, value)?;
             },
             INSTRUCTION::CALL(a) => {
-                let next_inst_addr = executable.next()?;
-                self.memory.push_stack(next_inst_addr.raw_value());
-                executable.jump_to(a.raw_value())?;
+                let next_inst_addr = executable.current_address() as u16;
+                self.memory.push_stack(next_inst_addr);
+                executable.jump_to(a.value(&self.memory)?)?;
             },
             INSTRUCTION::OUT(a) => {
                 print!("{}", a.raw_value() as u8 as char);
