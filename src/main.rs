@@ -1,4 +1,4 @@
-mod exec;
+mod proc;
 mod inst;
 mod mem;
 mod num;
@@ -23,5 +23,5 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     let mut vm = VM::new();
-    vm.run(&path)
+    vm.execute(&path)
 }

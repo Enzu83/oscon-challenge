@@ -3,27 +3,56 @@ use std::{error::Error, fs::File, io::Write};
 use crate::num::{kind_of, NumType};
 
 pub struct Memory {
+    heap: [u16; 32768],
     registers: [u16; 8],
     stack: Vec<u16>,
 }
 
 impl Memory {
     pub fn new() -> Self {
-        Self { registers: [0; 8], stack: Vec::new() }
+        Self { heap: [0; 32768], registers: [0; 8], stack: Vec::new() }
     }
 
-    pub fn read(&self, value: u16) -> Result<u16, Box<dyn Error>> {
-        match kind_of(value) {
-            NumType::LITERAL => Ok(value),
-            NumType::REGISTER => self.read_register(value),
-            NumType::INVALID => Err(format!("Invalid memory index: {}", value).into()),
+    pub fn load(&mut self, data: &[u16]) -> Result<(), Box<dyn Error>> {
+        if data.len() > self.heap.len() {
+            return Err(format!("Can't load data into memory, too large: {}", data.len()).into());
+        }
+
+        self.heap[..data.len()].copy_from_slice(&data);
+        Ok(())
+    }
+
+    pub fn value(&self, number: u16) -> Result<u16, Box<dyn Error>> {
+        match kind_of(number) {
+            NumType::LITERAL => Ok(number),
+            NumType::REGISTER => {
+                Ok(self.registers[(number % 32768) as usize])
+            },
+            NumType::INVALID => Err(format!("Invalid value: {}", number).into()),
         }
     }
 
-    pub fn write(&mut self, idx: u16, value: u16) -> Result<(), Box<dyn Error>> {
-        match kind_of(idx) {
-            NumType::REGISTER => self.write_register(idx, value),
-            _ => Err(format!("Invalid memory index: {}", value).into()),
+    pub fn read(&self, address: u16) -> Result<u16, Box<dyn Error>> {
+        match kind_of(address) {
+            NumType::LITERAL => Ok(self.heap[address as usize]),
+            NumType::REGISTER => {
+                Ok(self.registers[(address % 32768) as usize])
+            },
+            NumType::INVALID => Err(format!("Attempt to read at invalid memory address: {}", address).into()),
+        }
+    }
+
+    pub fn write(&mut self, address: u16, value: u16) -> Result<(), Box<dyn Error>> {
+        match kind_of(address) {
+            NumType::LITERAL => {
+                self.heap[address as usize] = value;
+                Ok(())
+            },
+            NumType::REGISTER => {
+                self.registers[(address % 32768) as usize] = value;
+                Ok(())
+            },
+            NumType::INVALID => Err(format!("Attempt to write {} at invalid memory address: {}", value, address).into()),
         }
     }
 
