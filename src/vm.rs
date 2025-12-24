@@ -25,92 +25,93 @@ impl VM {
         match executable.next_instruction()? {
             INSTRUCTION::HALT => {
                 executable.stop();
+                //self.memory.dump()?;
             },
             INSTRUCTION::PUSH(a) => {
-                let value = a.value(&self.memory)?;
+                let value = self.memory.read(a)?;
                 self.memory.push_stack(value);
             },
             INSTRUCTION::POP(a) => {
-                let idx = a.raw_value();
+                let idx = a;
                 let value = self.memory.pop_stack()?;
                 self.memory.write(idx, value)?;
             },
             INSTRUCTION::SET(a, b) => {
-                let idx = a.raw_value();
-                let value = b.value(&self.memory)?;
+                let idx = a;
+                let value = self.memory.read(b)?;
                 self.memory.write(idx, value)?;
             },
             INSTRUCTION::EQ(a, b, c) => {
-                let idx = a.raw_value();
-                let value = (b.value(&self.memory)? == c.value(&self.memory)?) as u16;
+                let idx = a;
+                let value = (self.memory.read(b)? == self.memory.read(c)?) as u16;
                 self.memory.write(idx, value)?;
             },
             INSTRUCTION::GT(a, b, c) => {
-                let idx = a.raw_value();
-                let value = (b.value(&self.memory)? > c.value(&self.memory)?) as u16;
+                let idx = a;
+                let value = (self.memory.read(b)? > self.memory.read(c)?) as u16;
                 self.memory.write(idx, value)?;
             },
             INSTRUCTION::JMP(a) => {
-                executable.jump_to(a.raw_value())?;
+                executable.jump_to(a)?;
             },
             INSTRUCTION::JT(a, b) => {
-                if a.value(&self.memory)? != 0 {
-                    executable.jump_to(b.raw_value())?;
+                if self.memory.read(a)? != 0 {
+                    executable.jump_to(b)?;
                 }
             },
             INSTRUCTION::JF(a, b) => {
-                if a.value(&self.memory)? == 0 {
-                    executable.jump_to(b.raw_value())?;
+                if self.memory.read(a)? == 0 {
+                    executable.jump_to(b)?;
                 }
             },
             INSTRUCTION::ADD(a, b, c) => {
-                let idx = a.raw_value();
-                let value = (b.value(&self.memory)? + c.value(&self.memory)?) % 32768;
+                let idx = a;
+                let value = (self.memory.read(b)? + self.memory.read(c)?) % 32768;
                 self.memory.write(idx, value)?;
             },
             INSTRUCTION::MULT(a, b, c) => {
-                let idx = a.raw_value();
-                let value = (b.value(&self.memory)? as u32 * c.value(&self.memory)? as u32) as u16 % 32768;
+                let idx = a;
+                let value = (self.memory.read(b)? as u32 * self.memory.read(c)? as u32) as u16 % 32768;
                 self.memory.write(idx, value)?;
             },
             INSTRUCTION::MOD(a, b, c) => {
-                let idx = a.raw_value();
-                let value = b.value(&self.memory)? % c.value(&self.memory)?;
+                let idx = a;
+                let value = self.memory.read(b)? % self.memory.read(c)?;
                 self.memory.write(idx, value)?;
             },
             INSTRUCTION::AND(a, b, c) => {
-                let idx = a.raw_value();
-                let value = b.value(&self.memory)? & c.value(&self.memory)?;
+                let idx = a;
+                let value = self.memory.read(b)? & self.memory.read(c)?;
                 self.memory.write(idx, value)?;
             },
             INSTRUCTION::OR(a, b, c) => {
-                let idx = a.raw_value();
-                let value = b.value(&self.memory)? | c.value(&self.memory)?;
+                let idx = a;
+                let value = self.memory.read(b)? | self.memory.read(c)?;
                 self.memory.write(idx, value)?;
             },
             INSTRUCTION::NOT(a, b) => {
-                let idx = a.raw_value();
-                let value = (!b.value(&self.memory)? << 1) >> 1;
+                let idx = a;
+                let value = !self.memory.read(b)? % 32768;
                 self.memory.write(idx, value)?;
             },
             INSTRUCTION::RMEM(a, b) => {
-                let b_idx = b.raw_value();
-                let value = self.memory.read(b_idx)?;
-                
-                let idx = a.raw_value();
+                let value = self.memory.read(self.memory.read(b)?)?;
+                let idx = a;
                 self.memory.write(idx, value)?;
             },
             INSTRUCTION::CALL(a) => {
                 let next_inst_addr = executable.current_address();
                 self.memory.push_stack(next_inst_addr);
-                executable.jump_to(a.value(&self.memory)?)?;
+                executable.jump_to(self.memory.read(a)?)?;
             },
             INSTRUCTION::OUT(a) => {
-                print!("{}", a.raw_value() as u8 as char);
+                print!("{}", a as u8 as char);
             },
             INSTRUCTION::NOOP => {},
             _ => {},
         }
+
+       // println!("{:?}", self.memory.registers());
 
         Ok(())
     }

@@ -1,10 +1,10 @@
 use std::{error::Error, fs::read};
 
-use crate::num::Number;
+use crate::num::from_hex_slice;
 use crate::inst::INSTRUCTION;
 
 pub struct Executable {
-    data: Vec<Number>,
+    data: Vec<u16>,
     ptr: usize,
     running: bool,
 }
@@ -12,7 +12,7 @@ pub struct Executable {
 impl Executable {
     pub fn new(path: &str) -> Result<Self, Box<dyn Error>> {
         let raw = read(path)?;
-        let data = Number::from_hex_slice(&raw)?;
+        let data = from_hex_slice(&raw)?;
 
         Ok(Self { data, ptr: 0, running: true })
     }
@@ -39,7 +39,7 @@ impl Executable {
         self.ptr as u16
     }
 
-    pub fn next(&mut self) -> Result<Number, Box<dyn Error>> {
+    pub fn next(&mut self) -> Result<u16, Box<dyn Error>> {
         let number = match self.data.get(self.ptr) {
             Some(num) => Ok(num.clone()),
             None => Err(format!("Attempt to read outside of the executable code boundaries ({})", self.ptr).into()),
@@ -50,14 +50,14 @@ impl Executable {
         return number;
     }
 
-    fn next_two(&mut self) -> Result<(Number, Number), Box<dyn Error>> {
+    fn next_two(&mut self) -> Result<(u16, u16), Box<dyn Error>> {
         let a = self.next()?;
         let b = self.next()?;
 
         Ok((a, b))
     }
 
-    fn next_three(&mut self) -> Result<(Number, Number, Number), Box<dyn Error>> {
+    fn next_three(&mut self) -> Result<(u16, u16, u16), Box<dyn Error>> {
         let a = self.next()?;
         let b = self.next()?;
         let c = self.next()?;
@@ -66,16 +66,10 @@ impl Executable {
     }
 
     pub fn next_instruction(&mut self) -> Result<INSTRUCTION, Box<dyn Error>> {
-        //let prev_ptr = self.ptr;
-        let instr = self.next()?.raw_value();
-        //println!("({:02}) {:?}", prev_ptr, instr);
-
-        let instruction = match instr {
+        let instruction = match self.next()? {
             0 => INSTRUCTION::HALT,
             1 => {
                 let (a, b) = self.next_two()?;
-                a.assert_register()?;
-                b.assert_literal()?;
                 INSTRUCTION::SET(a, b)
             },
             2 => {
@@ -84,17 +78,14 @@ impl Executable {
             },
             3 => {
                 let a = self.next()?;
-                a.assert_register()?;
                 INSTRUCTION::POP(a)
             },
             4 => {
                 let (a, b, c) = self.next_three()?;
-                a.assert_register()?;
                 INSTRUCTION::EQ(a, b, c)
             },
             5 => {
                 let (a, b, c) = self.next_three()?;
-                a.assert_register()?;
                 INSTRUCTION::GT(a, b, c)
             },
             6 => {
@@ -111,37 +102,30 @@ impl Executable {
             },
             9 => {
                 let (a, b, c) = self.next_three()?;
-                a.assert_register()?;
                 INSTRUCTION::ADD(a, b, c)
             },
             10 => {
                 let (a, b, c) = self.next_three()?;
-                a.assert_register()?;
                 INSTRUCTION::MULT(a, b, c)
             },
             11 => {
                 let (a, b, c) = self.next_three()?;
-                a.assert_register()?;
                 INSTRUCTION::MOD(a, b, c)
             },
             12 => {
                 let (a, b, c) = self.next_three()?;
-                a.assert_register()?;
                 INSTRUCTION::AND(a, b, c)
             },
             13 => {
                 let (a, b, c) = self.next_three()?;
-                a.assert_register()?;
                 INSTRUCTION::OR(a, b, c)
             },
             14 => {
                 let (a, b) = self.next_two()?;
-                a.assert_register()?;
                 INSTRUCTION::NOT(a, b)
             },
             15 => {
                 let (a, b) = self.next_two()?;
-                a.assert_register()?;
                 INSTRUCTION::RMEM(a, b)
             },
             17 => {
@@ -158,7 +142,7 @@ impl Executable {
             },
         };
 
-        //println!("{:?}\n", instruction);
+        //println!("{:?}", instruction);
 
         Ok(instruction)
     }

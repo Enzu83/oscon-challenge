@@ -1,4 +1,6 @@
-use std::error::Error;
+use std::{error::Error, fs::File, io::Write};
+
+use crate::num::{kind_of, NumType};
 
 pub struct Memory {
     registers: [u16; 8],
@@ -11,16 +13,12 @@ impl Memory {
         Self { registers: [0; 8], stack: Vec::new(), heap: [0; 32768] }
     }
 
-    pub fn read(&self, idx: u16) -> Result<u16, Box<dyn Error>> {
-        if idx <= 32767 {
-            return self.read_heap(idx);
+    pub fn read(&self, value: u16) -> Result<u16, Box<dyn Error>> {
+        match kind_of(value) {
+            NumType::LITERAL => Ok(value),
+            NumType::REGISTER => self.read_register(value),
+            NumType::INVALID => Err(format!("Invalid memory index: {}", value).into()),
         }
-
-        if idx >= 32768 && idx <= 32775 {
-            return self.read_register(idx);
-        }
-
-        return Err(format!("Invalid memory index: {}", idx).into());
     }
 
     pub fn write(&mut self, idx: u16, value: u16) -> Result<(), Box<dyn Error>> {
@@ -62,5 +60,31 @@ impl Memory {
             Some(value) => Ok(value),
             None => Err(format!("Stack is empty, cannot pop values out").into()),
         }
+    }
+
+    pub fn registers(&self) -> &[u16; 8] {
+        &self.registers
+    }
+
+    fn write_file(&self, path: &str, vals: &[u16]) -> Result<(), Box<dyn Error>> {
+        let mut file = File::create(path)?;
+        let mut vals_str = Vec::with_capacity(vals.len());
+        for val in self.heap.iter() {
+            vals_str.push(format!("{}", val));
+        }
+        file.write(vals_str.join("\n").as_bytes())?;
+
+        Ok(())
+    }
+
+    pub fn dump(&self) -> Result<(), Box<dyn Error>> {
+        std::fs::remove_dir_all("dump")?;
+        std::fs::create_dir("dump")?;
+
+        self.write_file("dump/heap.mem", &self.heap)?;
+        self.write_file("dump/registers.mem", &self.registers)?;
+        self.write_file("dump/stack.mem", &self.stack)?;
+
+        Ok(())
     }
 }
