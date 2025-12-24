@@ -52,16 +52,16 @@ impl VM {
                 self.memory.write(idx, value)?;
             },
             INSTRUCTION::JMP(a) => {
-                executable.jump_to(a)?;
+                executable.jump_to(a as usize)?;
             },
             INSTRUCTION::JT(a, b) => {
                 if self.memory.read(a)? != 0 {
-                    executable.jump_to(b)?;
+                    executable.jump_to(b as usize)?;
                 }
             },
             INSTRUCTION::JF(a, b) => {
                 if self.memory.read(a)? == 0 {
-                    executable.jump_to(b)?;
+                    executable.jump_to(b as usize)?;
                 }
             },
             INSTRUCTION::ADD(a, b, c) => {
@@ -95,14 +95,15 @@ impl VM {
                 self.memory.write(idx, value)?;
             },
             INSTRUCTION::RMEM(a, b) => {
-                let value = self.memory.read(self.memory.read(b)?)?;
+                let b_address = self.memory.read(b)? as usize;
+                let value = executable.read_at(b_address)?;
                 let idx = a;
                 self.memory.write(idx, value)?;
             },
             INSTRUCTION::CALL(a) => {
-                let next_inst_addr = executable.current_address();
+                let next_inst_addr = executable.current();
                 self.memory.push_stack(next_inst_addr);
-                executable.jump_to(self.memory.read(a)?)?;
+                executable.jump_to(self.memory.read(a)? as usize)?;
             },
             INSTRUCTION::OUT(a) => {
                 print!("{}", a as u8 as char);
@@ -110,8 +111,6 @@ impl VM {
             INSTRUCTION::NOOP => {},
             _ => {},
         }
-
-       // println!("{:?}", self.memory.registers());
 
         Ok(())
     }

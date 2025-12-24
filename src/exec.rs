@@ -25,29 +25,30 @@ impl Executable {
         self.running = false;
     }
 
-    pub fn jump_to(&mut self, address: u16) -> Result<(), Box<dyn Error>> {
+    pub fn current(&self) -> u16 {
+        self.ptr as u16
+    }
+
+    pub fn jump_to(&mut self, address: usize) -> Result<(), Box<dyn Error>> {
         if address as usize >= self.data.len() {
             return Err(format!("Attempt to jump outside of the executable code boundaries ({})", address).into());
         }
 
         self.ptr = address as usize;
-
         Ok(())
     }
 
-    pub fn current_address(&self) -> u16 {
-        self.ptr as u16
+    pub fn read_at(&self, address: usize) -> Result<u16, Box<dyn Error>> {
+        match self.data.get(address) {
+            Some(value) => Ok(value.clone()),
+            None => return Err(format!("Attempt to read outside of the executable code boundaries ({})", address).into())
+        }
     }
 
     pub fn next(&mut self) -> Result<u16, Box<dyn Error>> {
-        let number = match self.data.get(self.ptr) {
-            Some(num) => Ok(num.clone()),
-            None => Err(format!("Attempt to read outside of the executable code boundaries ({})", self.ptr).into()),
-        };
-        
-        self.ptr += 1;
-        
-        return number;
+        let number = self.read_at(self.ptr)?;
+        self.jump_to(self.ptr + 1)?;
+        Ok(number)
     }
 
     fn next_two(&mut self) -> Result<(u16, u16), Box<dyn Error>> {
