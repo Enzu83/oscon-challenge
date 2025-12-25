@@ -1,14 +1,14 @@
-mod proc;
 mod inst;
 mod mem;
 mod num;
+mod proc;
 mod vm;
 
 use crate::vm::VM;
 use std::{env, error::Error, process::exit};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let args= env::args();
+    let args = env::args();
 
     if args.len() < 2 {
         println!("Please provide a binary file.");
@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Some(path) => path,
         None => {
             return Err(format!("Can't parse provided arguments.").into());
-        },
+        }
     };
 
     let mut vm = VM::new();

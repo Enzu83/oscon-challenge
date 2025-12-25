@@ -5,7 +5,10 @@ pub struct Process {
 
 impl Process {
     pub fn new() -> Self {
-        Self { ptr: 0, running: false }
+        Self {
+            ptr: 0,
+            running: false,
+        }
     }
 
     pub fn start(&mut self) {
