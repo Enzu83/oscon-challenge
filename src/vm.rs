@@ -129,7 +129,10 @@ impl VM {
             17 => {
                 let a = self.read_and_increment()?;
                 INSTRUCTION::CALL(a)
-            }
+            },
+            18 => {
+                INSTRUCTION::RET
+            },
             19 => {
                 let a = self.read_and_increment()?;
                 INSTRUCTION::OUT(a)
@@ -219,6 +222,14 @@ impl VM {
                 let next_inst_addr = self.process.address();
                 self.memory.push_stack(next_inst_addr);
                 self.process.jump_to(self.memory.value(a)?);
+            }
+            INSTRUCTION::RET => {
+                if self.memory.stack_length() == 0 {
+                    self.process.stop();
+                } else {
+                    let address = self.memory.pop_stack()?;
+                    self.process.jump_to(self.memory.value(address)?);
+                }
             }
             INSTRUCTION::OUT(a) => {
                 print!("{}", a as u8 as char);

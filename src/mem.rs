@@ -67,4 +67,8 @@ impl Memory {
             None => Err(format!("Stack is empty, cannot pop values out").into()),
         }
     }
+
+    pub fn stack_length(&self) -> usize {
+        self.stack.len()
+    }
 }
