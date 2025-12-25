@@ -1,4 +1,4 @@
-use std::{error::Error, fs::read};
+use std::{error::Error, fs::read, io::{Read, stdin}};
 
 use crate::{
     inst::INSTRUCTION,
@@ -136,12 +136,16 @@ impl VM {
             19 => {
                 let a = self.read_and_increment()?;
                 INSTRUCTION::OUT(a)
+            },
+            20 => {
+                let a = self.read_and_increment()?;
+                INSTRUCTION::IN(a)
             }
             21 => INSTRUCTION::NOOP,
             opcode => return Err(format!("Invalid opcode: {}", opcode).into()),
         };
 
-        println!("{:?}", instruction);
+        //println!("{:?}", instruction);
 
         Ok(instruction)
     }
@@ -232,10 +236,15 @@ impl VM {
                 }
             }
             INSTRUCTION::OUT(a) => {
-                print!("{}", a as u8 as char);
+                let value = self.memory.value(a)?;
+                print!("{}", value as u8 as char);
+            }
+            INSTRUCTION::IN(a) => {
+                let mut user_char = [0];
+                stdin().read_exact(&mut user_char)?;
+                self.memory.write(a, user_char[0] as u16)?;              
             }
             INSTRUCTION::NOOP => {}
-            _ => {}
         }
 
         Ok(())
